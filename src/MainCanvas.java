@@ -5,6 +5,7 @@ import java.awt.font.GraphicAttribute;
 import java.awt.image.BufferedImage;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.lang.Math;
 
 /**
  * Created by Kevin on 9/14/2016.
@@ -13,9 +14,14 @@ public class MainCanvas extends Canvas implements Runnable, KeyListener {
     private final int TEXT_X = 10;
     private final int TEXT_Y_OFFSET = 15;
     private final int NUM_TEXT = 4;
+    private final int MAX_GRID_SIZE = 100;
 
-    private Thread runThread = null;
     private int gridSize = 25;
+    private int maxX = gridSize;
+    private int maxY = gridSize;
+    private int minX = 1;
+    private int minY = 1;
+    private Thread runThread = null;
     private int simulationSpeed = 1;
     private boolean started = false;
     private boolean oneGenOnly = false;
@@ -122,8 +128,20 @@ public class MainCanvas extends Canvas implements Runnable, KeyListener {
 
                 //System.out.println("Started simulation");
                 ArrayList<Point> newPoints = new ArrayList<Point>();
-                for (Point p : organismLocations) //apply rules 1, 2, and 3 to the live cells
+                maxX = 0;
+                maxY = 0;
+                minX = MAX_GRID_SIZE;
+                minY = MAX_GRID_SIZE;
+                for (Point p : organismLocations) //apply rules 1, 2, and 3 to the live cells and check for max and min x and y
                 {
+                    if (p.x > maxX)
+                        maxX = p.x;
+                    if (p.y > maxY)
+                        maxY = p.y;
+                    if (p.x < minX)
+                        minX = p.x;
+                    if (p.y < minY)
+                        minY = p.y;
                     //System.out.println("rule 1,2,3 point p: " + p.x + ", " + p.y);
                     ArrayList<Point> removedPoints = new ArrayList<Point>();
                     int surroundingOrganisms = 0;
@@ -169,10 +187,11 @@ public class MainCanvas extends Canvas implements Runnable, KeyListener {
                 }
 
                 //apply rule 4 to all dead cells
-                for (int x = 1; x <= gridSize; x++)
+                for (int x = Math.max(1, minX - 1); x <= Math.min(MAX_GRID_SIZE, maxX + 1); x++) //initial value of x can't be lower than 1, final value of x can't be higher than gridSize
                 {
-                    for (int y = 1; y <= gridSize; y++) {
-                        //System.out.println("NEW LOOP: " + x + ", " + y);
+                    for (int y = Math.max(1, minY - 1); y <= Math.min(MAX_GRID_SIZE, maxY + 1); y++) //initial value of y can't be lower than 1, final value of y can't be higher than gridSize
+                    {
+                        System.out.println("NEW LOOP: " + x + ", " + y);
                         int surroundingOrganisms = 0;
                         if (!(organismLocations.contains(new Point(x, y))))
                         {
@@ -237,7 +256,8 @@ public class MainCanvas extends Canvas implements Runnable, KeyListener {
                 simulationSpeed++;
                 break;
             case KeyEvent.VK_UP:
-                gridSize++;
+                if (gridSize < MAX_GRID_SIZE)
+                    gridSize++;
                 break;
             case KeyEvent.VK_DOWN:
                 if (gridSize > 10)
