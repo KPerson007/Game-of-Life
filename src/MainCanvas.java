@@ -82,25 +82,58 @@ public class MainCanvas extends Canvas implements Runnable, KeyListener {
         String statsString = "Grid Size: " + gridSize + "x" + gridSize + " Simulation Speed: " + simulationSpeed + "x";
         g.drawString(statsString, d.width - TEXT_X - g.getFontMetrics().stringWidth(statsString), TEXT_Y_OFFSET);
         //draw the grid
-        //draw borders
-        int y1 = TEXT_Y_OFFSET * (NUM_TEXT + 1);
-        g.drawLine(0, y1, d.width, y1); //top
-        g.drawLine(0, y1, 0, d.height); //left
-        g.drawLine(0, d.height - 1, d.width, d.height - 1); //bottom
-        g.drawLine(d.width - 1, y1, d.width - 1, d.height); //right
+        int y1 = TEXT_Y_OFFSET * (NUM_TEXT + 1); //get starting y coordinate of the grid
         //draw insides
+        boolean drawNewXBoundary = false;
+        boolean drawNewYBoundary = false;
+        //determine how to center the grid and draw boundaries
+        int xOffset = 0;
+        int yOffset = 0;
+        if (d.width - getX(gridSize - 1, d) != getX(1, d))
+            xOffset = (d.width - (getX(gridSize - 1, d) + getX(1, d))) / 2;
+        if ((d.height - y1) - getY(gridSize - 1, d, y1) != getY(1, d, y1))
+            yOffset = (d.height - (getY(gridSize - 1, d, y1) + getY(1, d, y1) - y1)) / 2;
+        System.out.println(xOffset);
+        System.out.println(yOffset);
         for (int i = 1; i < gridSize; i++)
         {
             int x = getX(i, d);
-            g.drawLine(x, y1, x, d.height);
+            if (i == gridSize - 1)
+                if (d.width - x != getX(1, d))
+                    drawNewXBoundary = false;
+            g.drawLine(x + xOffset, y1 + yOffset, x + xOffset, d.height - yOffset); //column
             int y = getY(i, d, y1);
-            g.drawLine(0, y, d.width, y);
+            if (i == gridSize - 1)
+                if ((d.height - y1) - y != getY(1, d, y1))
+                    drawNewYBoundary = false;
+            g.drawLine(xOffset, y + yOffset, d.width - xOffset, y + yOffset); //row
         }
+        if (drawNewXBoundary)
+        {
+            g.setColor(Color.magenta);
+            int x = getX(gridSize - 1, d) + getX(1, d);
+            System.out.println(x);
+            g.fillRect(x, y1, d.width - x, d.height - y1);
+            g.setColor(this.getForeground());
+        }
+        if (drawNewYBoundary)
+        {
+            g.setColor(Color.magenta);
+            int y = getY(gridSize - 1, d, y1) + getY(1, d, y1) - y1;
+            g.fillRect(0, y, d.width, d.height - y);
+            g.setColor(this.getForeground());
+        }
+
+        //draw borders
+        g.drawLine(xOffset, y1 + yOffset, d.width - xOffset, y1 + yOffset); //top
+        g.drawLine(xOffset, y1 + yOffset, xOffset, d.height - yOffset); //left
+        g.drawLine(xOffset, d.height - yOffset, d.width - xOffset, d.height - yOffset); //bottom
+        g.drawLine(d.width - xOffset, y1 + yOffset, d.width - xOffset, d.height - yOffset); //right
+
         //draw organisms
         for (Point p : organismLocations)
-        {
-            g.fillRect(getX(p.x, d) - getX(1, d), getY(p.y, d, y1) - getY(1, d, y1) + y1, getX(1, d), getY(1, d, y1) - y1);  //the coordinates for the organisms are 1 based not 0 based, so everything must be shifted to reflect that
-        }
+            if (!(p.x > gridSize || p.y > gridSize))
+                g.fillRect(getX(p.x, d) - getX(1, d) + xOffset, getY(p.y, d, y1) - getY(1, d, y1) + y1 + yOffset, getX(1, d), getY(1, d, y1) - y1);  //the coordinates for the organisms are 1 based not 0 based, so everything must be shifted to reflect that
     }
 
     public int getX(int n, Dimension d)
