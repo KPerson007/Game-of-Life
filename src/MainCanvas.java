@@ -1,6 +1,8 @@
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.font.GraphicAttribute;
 import java.awt.image.BufferedImage;
 import java.lang.reflect.Array;
@@ -10,13 +12,16 @@ import java.lang.Math;
 /**
  * Created by Kevin on 9/14/2016.
  */
-public class MainCanvas extends Canvas implements Runnable, KeyListener {
+public class MainCanvas extends Canvas implements Runnable, KeyListener, MouseListener {
     private final int TEXT_X = 10;
     private final int TEXT_Y_OFFSET = 15;
     private final int NUM_TEXT = 4;
     private final int MAX_GRID_SIZE = 100;
 
+    private int y1 = TEXT_Y_OFFSET * (NUM_TEXT + 1); //get starting y coordinate of the grid
     private int gridSize = 25;
+    private int xOffset = 0;
+    private int yOffset = 0;
     private int maxX = gridSize;
     private int maxY = gridSize;
     private int minX = 1;
@@ -51,6 +56,7 @@ public class MainCanvas extends Canvas implements Runnable, KeyListener {
         if (runThread == null)
         {
             this.addKeyListener(this);
+            this.addMouseListener(this);
             runThread = new Thread(this);
             runThread.start();
         }
@@ -59,42 +65,27 @@ public class MainCanvas extends Canvas implements Runnable, KeyListener {
         if (organismLocations == null)
         {
             organismLocations = new ArrayList<Point>();
-            organismLocations.add(new Point(10, 10));
-            organismLocations.add(new Point(10, 11));
-            organismLocations.add(new Point(10, 12));
-            organismLocations.add(new Point(10, 13));
-            organismLocations.add(new Point(10, 14));
-            organismLocations.add(new Point(12, 10));
-            organismLocations.add(new Point(12, 14));
-            organismLocations.add(new Point(14, 10));
-            organismLocations.add(new Point(14, 11));
-            organismLocations.add(new Point(14, 12));
-            organismLocations.add(new Point(14, 13));
-            organismLocations.add(new Point(14, 14));
         }
 
         //paint the main screen on the BufferedImage
         //draw text telling the user the application's controls
-        g.drawString("CONTROLS: SPACE to do 1 generation,", TEXT_X, TEXT_Y_OFFSET);
+        g.drawString("CONTROLS: SPACE to do 1 generation, 1-9 to load presets,", TEXT_X, TEXT_Y_OFFSET);
         g.drawString("CLICK on grid spots to add an organism, ENTER to start/stop,", TEXT_X, TEXT_Y_OFFSET * (NUM_TEXT / 2));
         g.drawString("RIGHT ARROW to increase simulation speed, LEFT ARROW to decrease simulation speed,", TEXT_X, TEXT_Y_OFFSET * (NUM_TEXT - 1));
         g.drawString("UP ARROW to increase grid size, DOWN ARROW to decrease grid size", TEXT_X, TEXT_Y_OFFSET * NUM_TEXT);
         String statsString = "Grid Size: " + gridSize + "x" + gridSize + " Simulation Speed: " + simulationSpeed + "x";
         g.drawString(statsString, d.width - TEXT_X - g.getFontMetrics().stringWidth(statsString), TEXT_Y_OFFSET);
         //draw the grid
-        int y1 = TEXT_Y_OFFSET * (NUM_TEXT + 1); //get starting y coordinate of the grid
         //draw insides
         boolean drawNewXBoundary = false;
         boolean drawNewYBoundary = false;
         //determine how to center the grid and draw boundaries
-        int xOffset = 0;
-        int yOffset = 0;
         if (d.width - getX(gridSize - 1, d) != getX(1, d))
             xOffset = (d.width - (getX(gridSize - 1, d) + getX(1, d))) / 2;
         if ((d.height - y1) - getY(gridSize - 1, d, y1) != getY(1, d, y1))
             yOffset = (d.height - (getY(gridSize - 1, d, y1) + getY(1, d, y1) - y1)) / 2;
-        System.out.println(xOffset);
-        System.out.println(yOffset);
+        //System.out.println(xOffset);
+        //System.out.println(yOffset);
         for (int i = 1; i < gridSize; i++)
         {
             int x = getX(i, d);
@@ -141,9 +132,9 @@ public class MainCanvas extends Canvas implements Runnable, KeyListener {
         return (d.width / gridSize) * n;
     }
 
-    public int getY(int n, Dimension d, int y1)
+    public int getY(int n, Dimension d, int offset)
     {
-        return (((d.height - y1) / gridSize) * n) + y1;
+        return (((d.height - offset) / gridSize) * n) + offset;
     }
 
     @Override
@@ -178,14 +169,6 @@ public class MainCanvas extends Canvas implements Runnable, KeyListener {
                     //System.out.println("rule 1,2,3 point p: " + p.x + ", " + p.y);
                     ArrayList<Point> removedPoints = new ArrayList<Point>();
                     int surroundingOrganisms = 0;
-//                    for (Point t : organismLocations)
-//                    {
-//                        System.out.println("rule 1,2,3 point t: " + t.x + ", " + t.y);
-//                        if (t.x == p.x || t.x == p.x - 1 || t.x == p.x + 1)
-//                            if (t.y == p.y || t.y == p.y - 1 || t.y == p.y + 1)
-//                                if (!(t.x == p.x && t.y == p.y))
-//                                    surroundingOrganisms++;
-//                    }
                     if (organismLocations.contains(new Point(p.x - 1, p.y - 1)))
                         surroundingOrganisms++;
                     if (organismLocations.contains(new Point(p.x, p.y - 1)))
@@ -224,7 +207,7 @@ public class MainCanvas extends Canvas implements Runnable, KeyListener {
                 {
                     for (int y = Math.max(1, minY - 1); y <= Math.min(MAX_GRID_SIZE, maxY + 1); y++) //initial value of y can't be lower than 1, final value of y can't be higher than gridSize
                     {
-                        System.out.println("NEW LOOP: " + x + ", " + y);
+                        //System.out.println("NEW LOOP: " + x + ", " + y);
                         int surroundingOrganisms = 0;
                         if (!(organismLocations.contains(new Point(x, y))))
                         {
@@ -296,11 +279,88 @@ public class MainCanvas extends Canvas implements Runnable, KeyListener {
                 if (gridSize > 10)
                     gridSize--;
                 break;
+            case KeyEvent.VK_1:
+                //load preset "exploder"
+                organismLocations = new ArrayList<Point>();
+                organismLocations.add(new Point(10, 10));
+                organismLocations.add(new Point(10, 11));
+                organismLocations.add(new Point(10, 12));
+                organismLocations.add(new Point(10, 13));
+                organismLocations.add(new Point(10, 14));
+                organismLocations.add(new Point(12, 10));
+                organismLocations.add(new Point(12, 14));
+                organismLocations.add(new Point(14, 10));
+                organismLocations.add(new Point(14, 11));
+                organismLocations.add(new Point(14, 12));
+                organismLocations.add(new Point(14, 13));
+                organismLocations.add(new Point(14, 14));
+                break;
+            case KeyEvent.VK_2:
+                //load preset "10 cell row"
+                organismLocations = new ArrayList<Point>();
+                organismLocations.add(new Point(8, 12));
+                organismLocations.add(new Point(9, 12));
+                organismLocations.add(new Point(10, 12));
+                organismLocations.add(new Point(11, 12));
+                organismLocations.add(new Point(12, 12));
+                organismLocations.add(new Point(13, 12));
+                organismLocations.add(new Point(14, 12));
+                organismLocations.add(new Point(15, 12));
+                organismLocations.add(new Point(16, 12));
+                organismLocations.add(new Point(17, 12));
+                break;
+            case KeyEvent.VK_3:
+                //load preset "glider"
+                organismLocations = new ArrayList<Point>();
+                organismLocations.add(new Point(8, 12));
+                organismLocations.add(new Point(9, 12));
+                organismLocations.add(new Point(10, 12));
+                organismLocations.add(new Point(10, 11));
+                organismLocations.add(new Point(9, 10));
+                break;
         }
     }
 
     @Override
     public void keyReleased(KeyEvent e)
+    {
+    }
+
+    @Override
+    public void mouseClicked (MouseEvent e)
+    {
+        System.out.println("Click " + e.getX() + " " + e.getY());
+        Dimension d = this.getSize();
+        int foundX = 0;
+        int foundY = 0;
+        for (int x = 1; x <= gridSize; x++) //loop through every cell to
+            for (int y = 1; y <= gridSize; y++)
+        if ((e.getX() >= getX(x - 1, d) + xOffset && e.getX() <= getX(x, d) + xOffset) && (e.getY() >= getY(y - 1, d, y1) + yOffset && e.getY() <= getY(y, d, y1) + yOffset))
+                {
+                    foundX = x;
+                    foundY = y;
+                }
+        if (foundX != 0 && foundY != 0)
+            organismLocations.add(new Point(foundX, foundY));
+    }
+
+    @Override
+    public void mouseEntered (MouseEvent e)
+    {
+    }
+
+    @Override
+    public void mouseExited (MouseEvent e)
+    {
+    }
+
+    @Override
+    public void mousePressed (MouseEvent e)
+    {
+    }
+
+    @Override
+    public void mouseReleased (MouseEvent e)
     {
     }
 }
